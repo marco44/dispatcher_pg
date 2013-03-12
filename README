@@ -1,0 +1,3 @@
+This tool dispatches a list of independant SQL statements (separated by semi-colon) over several PostgreSQL sessions.
+
+This is mostly useful to build indexes and constraints as fast as possible at the end of a big data load, or to parallelize the rebuilding of indexes.
