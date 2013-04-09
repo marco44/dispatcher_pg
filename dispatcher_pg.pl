@@ -86,19 +86,13 @@ sub worker
 {
 	# Creation de la session du thread a la base
 	my $dbh;
-	# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
-	$ENV{PGUSER}=$conf{'user'};
-	$ENV{PGPASSWORD}=$conf{'passwd'};
-	$ENV{PGPORT}=$conf{'port'};
-	$ENV{PGHOST}=$conf{'host'};
-	$ENV{PGDATABASE}=$conf{'database'};
 	while (my $requete=$dataqueue->dequeue())
 	{
 		if ($requete eq 'EXIT')
 		{
 			threads->exit();
 		}
-		open ($dbh,"| psql");
+		open ($dbh,"| psql -e");
 #		print "$requete\n";
 		print $dbh $requete;
 		close $dbh;
@@ -122,6 +116,14 @@ charge_conf($fic_conf);
 
 # On remplit les files d'attente ...
 reader();
+
+# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
+# Les variables d'environnement sont positionnées avant de démarrer les threads
+$ENV{PGUSER}=$conf{'user'};
+$ENV{PGPASSWORD}=$conf{'passwd'};
+$ENV{PGPORT}=$conf{'port'};
+$ENV{PGHOST}=$conf{'host'};
+$ENV{PGDATABASE}=$conf{'database'};
 
 # On demarre les threads, on fait la lecture des requetes, on attend la mort des threads
 for (my $i=0;$i<$conf{'nb_req_paralleles'};$i++)
