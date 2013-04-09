@@ -41,7 +41,7 @@ sub charge_conf
 	close CONF;
 
 	# Verifions que tous les parametres dont j'ai besoin sont la
-	foreach my $cle ('host','port','user','passwd','nb_req_paralleles')
+	foreach my $cle ('host','port','user','passwd','database','nb_req_paralleles')
 	{
 		if (not defined $conf{$cle})
 		{
@@ -91,6 +91,7 @@ sub worker
 	$ENV{PGPASSWORD}=$conf{'passwd'};
 	$ENV{PGPORT}=$conf{'port'};
 	$ENV{PGHOST}=$conf{'host'};
+	$ENV{PGDATABASE}=$conf{'database'};
 	while (my $requete=$dataqueue->dequeue())
 	{
 		if ($requete eq 'EXIT')

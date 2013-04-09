@@ -1,5 +1,6 @@
 host=localhost
 port=5432
-user=postgres
-passwd=au
+user=eptica
+passwd=eptica
+database=eptica
 nb_req_paralleles=4
