@@ -95,12 +95,6 @@ sub worker
 {
 	my ($query)=@_;
 	my $dbh;
-	# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
-	$ENV{PGUSER}=$conf{'user'};
-	$ENV{PGPASSWORD}=$conf{'passwd'};
-	$ENV{PGPORT}=$conf{'port'};
-	$ENV{PGHOST}=$conf{'host'};
-	$ENV{PGDATABASE}=$conf{'database'};
 	open ($dbh,"| psql -e");
 	print $dbh $query;
 	close $dbh;
@@ -123,6 +117,14 @@ charge_conf($fic_conf);
 
 # On remplit les files d'attente ...
 reader();
+
+# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
+# Les variables d'environnement sont positionnées avant de démarrer les threads
+$ENV{PGUSER}=$conf{'user'};
+$ENV{PGPASSWORD}=$conf{'passwd'};
+$ENV{PGPORT}=$conf{'port'};
+$ENV{PGHOST}=$conf{'host'};
+$ENV{PGDATABASE}=$conf{'database'};
 
 # On attend la mort de tous les fils
 do
