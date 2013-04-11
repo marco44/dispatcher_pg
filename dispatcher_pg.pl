@@ -102,6 +102,7 @@ sub worker
 	open ($dbh,"| psql -e");
 	print $dbh $query;
 	close $dbh;
+	exit 0;
 }
 
 
