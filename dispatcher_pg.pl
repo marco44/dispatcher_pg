@@ -14,8 +14,8 @@ my $requetes;
 
 # Variables globales
 
-# La liste des threads. Ne sert qu'a les attendre a la fin du programme, afin de ne s'arreter
-# que quand tous les threads ont fini
+# La liste des fils. Ne sert qu'a les attendre a la fin du programme, afin de ne s'arreter
+# que quand tous les fils ont fini
 my %sons;
 # Le hash de configuration
 my %conf;
@@ -46,7 +46,7 @@ sub charge_conf
 
 
 
-# Fonction reader : cette fonction lit le fichier de requetes. Elle est dans la boucle principale, pas dans un thread
+# Fonction reader : cette fonction lit le fichier de requetes. Elle est dans la boucle principale
 # Elle prend toutes les requetes et les exécute
 sub reader
 {
@@ -120,16 +120,17 @@ if ($help or (not $fic_conf) or not ($requetes))
 
 charge_conf($fic_conf);
 
-# On remplit les files d'attente ...
-reader();
 
-# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
-# Les variables d'environnement sont positionnées avant de démarrer les threads
+# Les variables d'environnement sont positionnées avant de démarrer le reste. C'est toujours ça qui ne sera plus à faire
 $ENV{PGUSER}=$conf{'user'};
 $ENV{PGPASSWORD}=$conf{'passwd'};
 $ENV{PGPORT}=$conf{'port'};
 $ENV{PGHOST}=$conf{'host'};
 $ENV{PGDATABASE}=$conf{'database'};
+
+# On remplit les files d'attente ...
+reader();
+
 
 # On attend la mort de tous les fils
 do
