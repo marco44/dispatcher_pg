@@ -82,9 +82,13 @@ sub runquery
 	}
 	# Ok, we have a slot
 	my $son=fork();
-	if ($son)
+	if (not $son)
 	{
 		worker($query);
+	}
+	else
+	{
+		$sons{$son}=1;
 	}
 }
 
