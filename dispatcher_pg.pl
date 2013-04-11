@@ -2,8 +2,6 @@
 
 use strict;
 
-use threads;
-use Thread::Queue;
 use Getopt::Long;
 use Pod::Usage;
 
@@ -16,13 +14,9 @@ my $requetes;
 
 # Variables globales
 
-# La dataqueue. C'est une file d'attente entre threads, qui permet de passer des messages.
-# Elle va servir a soumettre la liste de requetes lues au pool de threads les executant.
-my $dataqueue = Thread::Queue->new;
-
 # La liste des threads. Ne sert qu'a les attendre a la fin du programme, afin de ne s'arreter
 # que quand tous les threads ont fini
-my @threads;
+my %sons;
 # Le hash de configuration
 my %conf;
 
@@ -53,9 +47,7 @@ sub charge_conf
 
 
 # Fonction reader : cette fonction lit le fichier de requetes. Elle est dans la boucle principale, pas dans un thread
-# Elle prend toutes les requetes et les envoie dans la dataqueue
-# Elle pousse aussi un message 'EXIT' par thread, afin de leur demander de s'arreter d'eux memes quand ils ont
-# fini leur traitement
+# Elle prend toutes les requetes et les exécute
 sub reader
 {
 	my $requete='';
@@ -67,24 +59,41 @@ sub reader
 		{
 			# On vient de finir la requete. On supprime le ';'
 			$requete=~ s/;\s*$//;
-			$dataqueue->enqueue($requete);
+			runquery($requete);
 			$requete='';
 		}
-	}
-	# On envoie autant de messages d'arret que de threads.
-	for (my $i=0;$i<$conf{'nb_req_paralleles'};$i++)
-	{
-		$dataqueue->enqueue('EXIT');
 	}
 	close FIC;
 }
 
-# Fonction worker : cete fonction recoit un message de la file d'attente et le traite (execute la requete).
-# Elle sort quand elle recoit un message 'EXIT'
+
+# Fonction runquery: cette fonction reçoit une requête à exécuter. Elle l'exécute dès qu'un fils est disponible
+# Elle fait donc:
+# wait d'un fils si le max est atteint. Le fils appelle worker avec la requête. Le pere rajoute le fils dans le tableau
+# fork d'un fils tant qu'on est sous le max
+sub runquery
+{
+	my ($query)=@_;
+	if (scalar(keys(%sons))==$conf{nb_req_paralleles})
+	{
+		# On attend
+		my $dead_son=wait();
+		delete $sons{$dead_son};
+	}
+	# Ok, we have a slot
+	my $son=fork();
+	if ($son)
+	{
+		worker($query);
+	}
+}
+
+
+# Fonction worker : cete fonction recoit une requête à exécuter
 # A l'initialisation, on monte une session a la base.
 sub worker
 {
-	# Creation de la session du thread a la base
+	my ($query)=@_;
 	my $dbh;
 	# Pas besoin de section critique: les parametres de connexion sont les mêmes pour les 3 sessions
 	$ENV{PGUSER}=$conf{'user'};
@@ -92,17 +101,9 @@ sub worker
 	$ENV{PGPORT}=$conf{'port'};
 	$ENV{PGHOST}=$conf{'host'};
 	$ENV{PGDATABASE}=$conf{'database'};
-	while (my $requete=$dataqueue->dequeue())
-	{
-		if ($requete eq 'EXIT')
-		{
-			threads->exit();
-		}
-		open ($dbh,"| psql");
-#		print "$requete\n";
-		print $dbh $requete;
-		close $dbh;
-	}
+	open ($dbh,"| psql -e");
+	print $dbh $query;
+	close $dbh;
 }
 
 
@@ -123,15 +124,7 @@ charge_conf($fic_conf);
 # On remplit les files d'attente ...
 reader();
 
-# On demarre les threads, on fait la lecture des requetes, on attend la mort des threads
-for (my $i=0;$i<$conf{'nb_req_paralleles'};$i++)
+# On attend la mort de tous les fils
+do
 {
-	my $thread = threads->new(\&worker) or die "Impossible de creer un thread\n";
-	push @threads,$thread;
-}
-
-
-foreach my $thread (@threads)
-{
-	$thread->join();
-}
+} until (wait() == -1);
