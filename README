@@ -1,3 +1,7 @@
 This tool dispatches a list of independant SQL statements (separated by semi-colon) over several PostgreSQL sessions.
 
 This is mostly useful to build indexes and constraints as fast as possible at the end of a big data load, or to parallelize the rebuilding of indexes.
+
+This scripts waits for two options:
+-conf my_conf_file: the configuration file, gives the connection information and parallelism
+-requetes my_query_file: the file containing all the queries (sorry, I'll have to translate this option :) )
