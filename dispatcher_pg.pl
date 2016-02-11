@@ -5,10 +5,12 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 
+# Sorry this is not translated yet
+# Just pass -conf to point to the configuration file and -query to the query file
 # Parametres du script
-# Les requetes doivent etres separees par un
-# Le parseur est basique : on considère qu'une requete est finie quand ; puis retour a la ligne
-my $requetes;
+# Les queries doivent etres separees par un
+# Le parseur est basique : on considère qu'une query est finie quand ; puis retour a la ligne
+my $queries;
 
 
 
@@ -35,7 +37,7 @@ sub charge_conf
 	close CONF;
 
 	# Verifions que tous les parametres dont j'ai besoin sont la
-	foreach my $cle ('host','port','user','passwd','database','nb_req_paralleles')
+	foreach my $cle ('host','port','user','passwd','database','nb_parallel_queries')
 	{
 		if (not defined $conf{$cle})
 		{
@@ -46,21 +48,21 @@ sub charge_conf
 
 
 
-# Fonction reader : cette fonction lit le fichier de requetes. Elle est dans la boucle principale
-# Elle prend toutes les requetes et les exécute
+# Fonction reader : cette fonction lit le fichier de queries. Elle est dans la boucle principale
+# Elle prend toutes les queries et les exécute
 sub reader
 {
-	my $requete='';
-	open FIC,$requetes or die "Impossible d'ouvrir $requetes\n";
+	my $query='';
+	open FIC,$queries or die "Impossible d'ouvrir $queries\n";
 	while (my $ligne = <FIC>)
 	{
-		$requete.=$ligne;
+		$query.=$ligne;
 		if ($ligne =~ /;\s*$/)
 		{
-			# On vient de finir la requete. On supprime le ';'
-			$requete=~ s/;\s*$//;
-			runquery($requete);
-			$requete='';
+			# On vient de finir la query. On supprime le ';'
+			$query=~ s/;\s*$//;
+			runquery($query);
+			$query='';
 		}
 	}
 	close FIC;
@@ -74,7 +76,7 @@ sub reader
 sub runquery
 {
 	my ($query)=@_;
-	if (scalar(keys(%sons))==$conf{nb_req_paralleles})
+	if (scalar(keys(%sons))==$conf{nb_parallel_queries})
 	{
 		# On attend
 		my $dead_son=wait();
@@ -110,9 +112,9 @@ sub worker
 my $fic_conf;
 my $help;
 my $getopt = GetOptions("conf=s" => \$fic_conf,
-			"requetes=s" => \$requetes,
+			"queries=s" => \$queries,
 			"help" =>\$help);
-if ($help or (not $fic_conf) or not ($requetes))
+if ($help or (not $fic_conf) or not ($queries))
 {
 	Pod::Usage::pod2usage(-exitval => 1, -verbose => 3);
 }
